@@ -60,6 +60,48 @@ export const PPC_DATABASE: PPCSection[] = [
 
   // --- CHAPTER II: GENERAL EXPLANATIONS ---
   {
+    id: "9",
+    section: "9",
+    title: "Number",
+    urduTitle: "واحد اور جمع (تعداد)",
+    chapter: "Chapter II: General Explanations",
+    definition: "Unless the contrary appears from the context, words importing the singular number include the plural number, and words importing the plural number include the singular number.",
+    urduDefinition: "جب تک کہ سیاق و سباق سے اس کے برعکس ظاہر نہ ہو، واحد الفاظ میں جمع شامل ہے اور جمع الفاظ میں واحد شامل ہے۔",
+    punishment: "Not applicable (General explanation of statutory interpretation).",
+    urduPunishment: "قابلِ اطلاق نہیں (قانونی مفہوم کی تشریح)۔",
+    keyPoints: ["Words in singular include plural", "Words in plural include singular", "Applies unless contrary intent is shown from the context"],
+    relatedSections: ["8", "10", "11"],
+    keywords: ["number", "singular", "plural", "interpretation", "definitions", "context", "grammar"]
+  },
+  {
+    id: "17",
+    section: "17",
+    title: "Government",
+    urduTitle: "حکومت کی تعریف",
+    chapter: "Chapter II: General Explanations",
+    definition: "The word 'Government' denotes the person or persons authorized by law to administer executive government in Pakistan, or in any part thereof.",
+    urduDefinition: "لفظ 'حکومت' سے مراد وہ شخص یا اشخاص ہیں جو پاکستان یا اس کے کسی حصے میں انتظامی حکومت چلانے کے لیے قانوناً مجاز ہوں۔",
+    punishment: "Not applicable (Definition reference).",
+    urduPunishment: "قابلِ اطلاق نہیں (تعریف کا حوالہ)۔",
+    keyPoints: ["Denotes lawful executive authority", "Applies to provincial, federal, or local government executive tiers", "Covers legal representatives of state authority"],
+    relatedSections: ["14", "19", "21"],
+    keywords: ["government", "authority", "executive", "state", "administration", "pakistan", "governance"]
+  },
+  {
+    id: "22",
+    section: "22",
+    title: "Movable property",
+    urduTitle: "منقولہ جائیداد کی تعریف",
+    chapter: "Chapter II: General Explanations",
+    definition: "The words 'movable property' are intended to include corporal property of every description, except land and things attached to the earth or permanently fastened to anything which is attached to the earth.",
+    urduDefinition: "لفظ 'منقولہ جائیداد' سے مراد ہر قسم کی ظاہری مادی جائیداد ہے، سوائے زمین اور زمین کے ساتھ جڑی ہوئی یا مستقل طور پر نصب شدہ چیزوں کے۔",
+    punishment: "Not applicable (General explanatory reference used for theft/mischief/property crimes).",
+    urduPunishment: "قابلِ اطلاق نہیں (چوری، نقضِ امن اور جائیداد کے متعلقہ جرائم کے لیے تعریف)۔",
+    keyPoints: ["Includes all tangible, corporal and physical property", "Excludes land and permanent attachments to soil", "Essential threshold definition for offences such as Theft (Section 378)"],
+    relatedSections: ["378", "403", "405", "425"],
+    keywords: ["movable property", "property", "theft", "tangible", "corporal", "land", "earth"]
+  },
+  {
     id: "21",
     section: "21",
     title: "Public servant",
@@ -90,6 +132,34 @@ export const PPC_DATABASE: PPCSection[] = [
     ],
     relatedSections: ["109", "149", "120-B"],
     keywords: ["common intention", "joint liability", "sharakat", "group crime", "together", "aid", "unlawful assembly"]
+  },
+  {
+    id: "46",
+    section: "46",
+    title: "Death",
+    urduTitle: "موت کی تعریف",
+    chapter: "Chapter II: General Explanations",
+    definition: "The word 'death' denotes the death of a human being, unless the contrary appears from the context.",
+    urduDefinition: "لفظ 'موت' سے مراد کسی انسان کی موت ہے، جب تک کہ سیاق و سباق سے اس کے برعکس ظاہر نہ ہو۔",
+    punishment: "Not applicable (Definition reference).",
+    urduPunishment: "قابلِ اطلاق نہیں (تعریف کا حوالہ)۔",
+    keyPoints: ["Refers exclusively to human death in this statutory context", "Used broadly across offences affecting body and homicide (e.g. Qatl)"],
+    relatedSections: ["45", "299", "300"],
+    keywords: ["death", "human", "demise", "mote", "homicide", "life", "end"]
+  },
+  {
+    id: "50",
+    section: "50",
+    title: "Section",
+    urduTitle: "دفعہ (سیکشن) کی تعریف",
+    chapter: "Chapter II: General Explanations",
+    definition: "The word 'Section' denotes one of those portions of a Chapter of this Code which are distinguished by prefixed numeral figures.",
+    urduDefinition: "لفظ 'دفعہ' (سیکشن) سے مراد اس مجموعہ کے کسی باب کا وہ حصہ ہے جسے عددی ہندسوں سے ممتاز کیا گیا ہو۔",
+    punishment: "Not applicable (Definition reference).",
+    urduPunishment: "قابلِ اطلاق نہیں (تعریف کا حوالہ)۔",
+    keyPoints: ["Represents numbered fragments/articles under chapters", "Used for citations and legal references throughout courts"],
+    relatedSections: ["49", "51", "52"],
+    keywords: ["section", "dafah", "number", "clause", "provision", "statute", "citation"]
   },
 
   // --- CHAPTER III: OF PUNISHMENTS ---
@@ -314,6 +384,24 @@ export const PPC_DATABASE: PPCSection[] = [
     relatedSections: ["121", "153-A"],
     keywords: ["sedition", "hatred", "baghawat", "government opposition", "disloyalty"]
   },
+  {
+    id: "125",
+    section: "125",
+    title: "Waging war against any Asiatic Power in alliance with Pakistan",
+    urduTitle: "پاکستان کے حلیف کسی ایشیائی ملک کے خلاف جنگ کرنا",
+    chapter: "Chapter VI: Of Offences Against the State",
+    definition: "Whoever wages war against the Government of any Asiatic Power in alliance or at peace with Pakistan, or attempts to wage such war, or abets the waging of such war, shall be punished.",
+    urduDefinition: "جو کوئی پاکستان کی حلیف یا خلوت پسند ایشیائی ریاست کی حکومت کے خلاف جنگ چھیڑے گا، یا ایسی جنگ چھیڑنے کی کوشش کرے گا، یا اس کی اعانت کرے گا۔",
+    punishment: "Imprisonment for life, to which fine may be added, or with imprisonment of either description for a term which may extend to seven years, to which fine may be added, or with fine.",
+    urduPunishment: "عمر قید، یا سات سال تک قید کی سزا اور جرمانہ، یا صرف جرمانہ۔",
+    keyPoints: [
+      "Foreign state must be situated in Asia",
+      "Foreign state must be in active treaty alliance or peace relations with Pakistan",
+      "Criminalized to maintain foreign relations stability and prevent state territory from being used for proxy wars"
+    ],
+    relatedSections: ["121", "126", "127"],
+    keywords: ["asiatic power", "alliance", "waging war", "foreign relations", "peace treaty", "diplomatic"]
+  },
 
   // --- CHAPTER VIII: OF OFFENCES AGAINST THE PUBLIC TRANQUILLITY ---
   {
@@ -479,6 +567,24 @@ export const PPC_DATABASE: PPCSection[] = [
     relatedSections: ["191", "194", "195"],
     keywords: ["perjury punishment", "fabricating evidence", "false witness", "court jail", "jhoota sabot"]
   },
+  {
+    id: "202",
+    section: "202",
+    title: "Intentional omission to give information of offence by person bound to inform",
+    urduTitle: "جرم کی اطلاع دینے کا پابند شخص غفلت برتے یا دیدہ و دانستہ چھپائے",
+    chapter: "Chapter XI: Of False Evidence and Offences Against Public Justice",
+    definition: "Whoever, knowing or having reason to believe that an offence has been committed, intentionally omits to give any information respecting that offence which he is legally bound to give, shall be punished.",
+    urduDefinition: "جو کوئی یہ جانتے ہوئے یا یقین کرنے کی معقول وجہ رکھتے ہوئے کہ کوئی جرم سرزد ہوا ہے، جان بوجھ کر اس جرم کے بارے میں کوئی بھی معلومات فراہم کرنے سے گریز کرے جسے فراہم کرنے کا وہ قانوناً پابند ہو۔",
+    punishment: "Imprisonment of either description for a term which may extend to six months, or with fine, or with both.",
+    urduPunishment: "چھ ماہ تک قید، یا جرمانہ، یا دونوں سزائیں۔",
+    keyPoints: [
+      "The person must have actual knowledge or reason to believe an offence occurred",
+      "Must be legally bound by law to inform authorities of such offence",
+      "The omission to inform must be intentional"
+    ],
+    relatedSections: ["176", "201", "203"],
+    keywords: ["intentional omission", "withholding information", "hide crime", "police report", "bound to inform"]
+  },
 
   // --- CHAPTER XII: COIN AND STAMPS ---
   {
@@ -509,6 +615,24 @@ export const PPC_DATABASE: PPCSection[] = [
     relatedSections: ["230", "235", "489-A"],
     keywords: ["counterfeiting", "fake coins", "jaali currency", "mint fraud"]
   },
+  {
+    id: "245",
+    section: "245",
+    title: "Unlawfully taking coining instrument from mint",
+    urduTitle: "ٹکسال سے سکہ سازی کا آلہ یا مشین غیر قانونی طور پر باہر لے جانا",
+    chapter: "Chapter XII: Of Offences Relating to Coin and Government Stamps",
+    definition: "Whoever, without lawful authority, takes out of any mint, any coining tool, instrument, or engine, shall be punished.",
+    urduDefinition: "جو کوئی قانونی مجاز ہوئے بغیر کسی ٹکسال (سرکاری مِقدارِ گاہ) سے کوئی بھی سکہ سازی کا آلہ، اوزار یا مشین باہر لے جائے گا۔",
+    punishment: "Imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+    urduPunishment: "سات سال تک قید اور جرمانہ۔",
+    keyPoints: [
+      "No actual coining is required to trigger this offence",
+      "Taking coining instruments/dies from a state mint is criminalized per se",
+      "Protects monetary and coin minting integrity against counterfeit operations"
+    ],
+    relatedSections: ["235", "244", "246"],
+    keywords: ["mint", "coining instrument", "dies", "taking tool", "unauthorized removal", "token maker"]
+  },
 
   // --- CHAPTER XIV: PUBLIC HEALTH, SAFETY, CODES ---
   {
@@ -524,6 +648,24 @@ export const PPC_DATABASE: PPCSection[] = [
     keyPoints: ["Does not require specific victim", "Affects environment, safety or public space"],
     relatedSections: ["269", "290", "291"],
     keywords: ["public nuisance", "noise pollution", "street blocking", "environmental damage", "takleef"]
+  },
+  {
+    id: "270",
+    section: "270",
+    title: "Malignant act likely to spread infection of disease dangerous to life",
+    urduTitle: "جان بوجھ کر یا دشمنی میں کوئی ایسا فعل کرنا جس سے زندگی کے لیے مہلک بیماری پھیلنے کا خطرہ ہو",
+    chapter: "Chapter XIV: Public Health and Safety",
+    definition: "Whoever malignantly does any act which is, and which he knows or has reason to believe to be, likely to spread the infection of any disease dangerous to life, shall be punished.",
+    urduDefinition: "جو کوئی عناد اور شرارت انگیز طور پر کوئی ایسا فعل کرے گا جس کے بارے میں وہ جانتا ہو یا یقین کرنے کی وجہ رکھتا ہو کہ اس سے زندگی کے لیے خطرناک کسی بیماری کا انفیکشن پھیلنے کا خدشہ ہے۔",
+    punishment: "Imprisonment of either description for a term which may extend to two years, or with fine, or with both.",
+    urduPunishment: "دو سال تک قید، یا جرمانہ، یا دونوں سزائیں۔",
+    keyPoints: [
+      "The act must be done 'malignantly' (with malicious, active ill-will or deliberate intent to harm)",
+      "The disease must be dangerous to human life",
+      "Requires actual knowledge or reason to believe that the act is likely to infect others"
+    ],
+    relatedSections: ["269", "271"],
+    keywords: ["malignant act", "infection spread", "contagious disease", "life threat", "quarantine", "biosecurity", "epidemic"]
   },
   {
     id: "279",
@@ -654,6 +796,24 @@ export const PPC_DATABASE: PPCSection[] = [
     keyPoints: ["Intention to cause death", "Knowledge of imminent danger to life"],
     relatedSections: ["301", "302", "324"],
     keywords: ["intent", "murder", "qatl", "qatl-e-amd", "killing", "homicide"]
+  },
+  {
+    id: "301",
+    section: "301",
+    title: "Culpable homicide by causing death of person other than person whose death was intended",
+    urduTitle: "مطلوبہ شخص کے بجائے کسی دوسرے شخص کی موت کا سبب بن کر قتلِ عمد کا ارتکاب",
+    chapter: "Chapter XVI: Offences Affecting Human Life",
+    definition: "If a person, by doing anything which he intends or knows to be likely to cause death, commits culpable homicide by causing the death of any person, whose death he neither intends nor knows himself to be likely to cause, the culpable homicide committed by the offender is of the description of which it would have been if he had caused the death of the person whose death he intended or knew himself to be likely to cause.",
+    urduDefinition: "اگر کوئی شخص کسی ایسے شخص کی موت کا سبب بن کر قتلِ عمد کا مرتکب ہو جس کا اقدام وہ نہیں چاہتا تھا، تو اس کا جرم اسی نوعیت کا تصور کیا جائے گا گویا اس نے اسی شخص کی موت واقع کی ہو جس کا ارادہ اس نے کیا تھا۔ (یہ 'منتقلی نیت' کا اصول کہلاتا ہے)۔",
+    punishment: "Same punishment as provided for Qatl-i-Amd (Section 302) or the intended offence under this Code.",
+    urduPunishment: "وہی سزا جو ارادہ کیے گئے قتل کے لیے تجویز کی گئی ہو (جیسے دفعہ 302 کے تحت بطور قتلِ عمد سزا)۔",
+    keyPoints: [
+      "Incorporates the 'Doctrine of Transfer of Malice'",
+      "Applies when the target misses and an innocent bystander or another person gets killed",
+      "The degree of liability remains identical as if the intended target had died"
+    ],
+    relatedSections: ["300", "302", "324"],
+    keywords: ["transfer of malice", "culpable homicide", "intended victim", "bystander death", "accident death intent", "homicide transfer"]
   },
   {
     id: "302",
