@@ -77,7 +77,12 @@ If the user searches by crime name or legal concept (e.g., "Theft", "Fraud", "Mu
 - If the user queries in English, respond in English.
 - If 'bilingual' is selected or requested, or when helpful, provide consecutive versions of the legal definition and punishments in BOTH English and Urdu.
 
-5. LEGAL DISCLAIMER:
+5. PROFESSIONAL LEGAL PROCEDURAL ADVICE:
+- You must always advise the user of the realistic and proper litigation/trial procedures under Pakistan's Code of Criminal Procedure (CrPC) 1898 associated with the offense.
+- Detail the exact legal steps (e.g., lodging a First Information Report (FIR) under Section 154 CrPC, filing a private complaint before the Magistrate under Section 200 CrPC, submitting bail applications, or navigating the trial in criminal courts).
+- Explicitly emphasize that these strategic steps must only be taken after consulting with a licensed, practising Advocate (of Lower Courts, High Courts, or the Supreme Court of Pakistan) registered with the respective Provincial Bar Council (e.g., Punjab Bar Council, Sindh Bar Council, KP Bar Council, Balochistan Bar Council, Islamabad Bar Council).
+
+6. LEGAL DISCLAIMER:
 At the end of EVERY legal explanation or analysis, you MUST append the following exact legal disclaimer block:
 "This response is based on the Pakistan Penal Code document and is for legal research assistance. It does not replace professional legal advice."`;
 
@@ -118,6 +123,113 @@ function findLocalMatchedSections(userQuery: string): PPCSection[] {
 // API: Check status/health of backend
 app.get("/api/health", (req, res) => {
   res.json({ status: "healthy", hasApiKey: !!apiKey });
+});
+
+// API: Dynamically load/synthesize any PPC Section by its number
+app.post("/api/get-section", async (req, res) => {
+  try {
+    const { section } = req.body;
+    if (!section) {
+      return res.status(400).json({ error: "Missing section number in request." });
+    }
+
+    const cleanSecNum = section.toString().trim().toLowerCase();
+
+    // 1. Look up in static PPC_DATABASE
+    const existing = PPC_DATABASE.find(item => item.section.toLowerCase() === cleanSecNum);
+    if (existing) {
+      return res.json({ success: true, section: existing, source: "database" });
+    }
+
+    // 2. Synthesize using AI on-demand
+    try {
+      const gClient = getAIClient();
+      
+      const dynamicPrompt = `Generate a structured PPCSection object for section number "${section}" of the Pakistan Penal Code (XLV of 1860).
+Please make sure the returned JSON perfectly conforms to the schema. Make the definition, punishment, and key points extremely accurate and authentic to the statutory provisions of Pakistan Penal Code. Include Urdu translations for title, definition and punishment where possible.`;
+
+      const response = await gClient.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: dynamicPrompt,
+        config: {
+          systemInstruction: `You are a legal schema synthesizer for the Pakistan Penal Code (XLV of 1860).
+Your job is to return a strict, valid JSON object representing the requested section of the Pakistan Penal Code.
+
+The JSON MUST exactly match this TypeScript interface:
+interface PPCSection {
+  id: string; // The section number as a string (same as the 'section' field, e.g. "307")
+  section: string; // The section number (e.g., "307" or "377-A")
+  title: string; // The English title of the section
+  chapter: string; // The exact chapter number and title (e.g., "Chapter XVI: Of Offences Affecting the Human Body")
+  definition: string; // Detailed English statutory definition/explanation
+  punishment: string; // Detailed English punishment description
+  keyPoints: string[]; // At least 2-4 key legal/prosecutorial elements as bullet points in English
+  relatedSections: string[]; // List of related sections under PPC (just the numbers, e.g. ["302", "324"])
+  keywords: string[]; // 4-8 relevant English keywords for search matching
+  urduTitle?: string; // The Urdu title of the section (e.g., "اقدامِ قتل")
+  urduDefinition?: string; // Clear, grammatically correct and legally accurate Urdu definition/explanation
+  urduPunishment?: string; // Clear and accurate Urdu punishment description
+}
+
+Rules:
+1. ONLY return the valid JSON, no markdown code block surrounds, no additional text or introductory phrases.
+2. Ensure all fields are filled with accurate legal provisions from the official Pakistan Penal Code (XLV of 1860).
+3. If the section does not exist in the actual Pakistan Penal Code, return a JSON with an error field like:
+{ "error": "This section does not exist in the Pakistan Penal Code." }
+4. Always provide precise legal information. Never invent or hallucinate provisions.`,
+          temperature: 0.1,
+        }
+      });
+
+      let responseText = response.text || "";
+      responseText = responseText.trim();
+      
+      // Clean potential markdown quotes
+      if (responseText.startsWith("```json")) {
+        responseText = responseText.substring(7);
+      } else if (responseText.startsWith("```")) {
+        responseText = responseText.substring(3);
+      }
+      if (responseText.endsWith("```")) {
+        responseText = responseText.substring(0, responseText.length - 3);
+      }
+      responseText = responseText.trim();
+
+      const parsed = JSON.parse(responseText);
+
+      if (parsed.error) {
+        return res.status(404).json({ error: parsed.error });
+      }
+
+      // Ensure id is present
+      if (!parsed.id) {
+        parsed.id = parsed.section || section;
+      }
+
+      return res.json({ success: true, section: parsed, source: "ai" });
+    } catch (aiErr: any) {
+      console.error("AI dynamic section generation failed:", aiErr);
+      
+      // Offline fallback template generator
+      const cleanNum = cleanSecNum.toUpperCase();
+      const fallbackSection: PPCSection = {
+        id: cleanNum,
+        section: cleanNum,
+        title: `Section ${cleanNum} of Pakistan Penal Code`,
+        chapter: "Chapter Not Set (Offline)",
+        definition: `Section ${cleanNum} of the Pakistan Penal Code (XLV of 1860). Complete text and interpretation requires a server connection with an active GEMINI_API_KEY.`,
+        punishment: "Details offline. Please configure your GEMINI_API_KEY to retrieve on-demand section punishments dynamically.",
+        keyPoints: ["Requires live server authentication"],
+        relatedSections: [],
+        keywords: [cleanNum.toLowerCase()]
+      };
+      
+      return res.json({ success: true, section: fallbackSection, source: "fallback" });
+    }
+  } catch (err: any) {
+    console.error("Error in get-section:", err);
+    res.status(500).json({ error: err.message || "An error occurred retrieving the section." });
+  }
 });
 
 // API: Search and execute reasoning Q&A against the PPC database

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { PPC_DATABASE, PPCSection } from "./data/ppc_sections";
+import { ALL_SECTIONS_INDEX } from "./data/all_sections_index";
 
 export default function App() {
   // Query Console State
@@ -41,13 +42,87 @@ export default function App() {
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [analysisMatchedSections, setAnalysisMatchedSections] = useState<PPCSection[]>([]);
   
+  // Full database state (loaded with indexed stubs + loaded active entries)
+  const [fullDatabase, setFullDatabase] = useState<PPCSection[]>(() => {
+    return ALL_SECTIONS_INDEX.map(idx => {
+      const rich = PPC_DATABASE.find(r => r.section === idx.section);
+      if (rich) return rich;
+      return {
+        id: idx.section,
+        section: idx.section,
+        title: idx.title,
+        chapter: idx.chapter,
+        definition: "", // empty means we lazy-load it on selection!
+        punishment: "", 
+        keyPoints: [],
+        relatedSections: [],
+        keywords: [idx.section, idx.title.toLowerCase()]
+      };
+    });
+  });
+
   // Interactive Offline Database Sidebar State
   const [selectedSection, setSelectedSection] = useState<PPCSection | null>(PPC_DATABASE[3]); // Default to Section 302
   const [dbSearchTerm, setDbSearchTerm] = useState("");
+
+  // Dynamic Loader states
+  const [sectionToLoad, setSectionToLoad] = useState("");
+  const [isLoadingSection, setIsLoadingSection] = useState(false);
+  const [loadSectionError, setLoadSectionError] = useState<string | null>(null);
+  const [loadSectionSuccess, setLoadSectionSuccess] = useState(false);
+
+  const handleLoadSection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sectionToLoad.trim()) return;
+
+    setIsLoadingSection(true);
+    setLoadSectionError(null);
+    setLoadSectionSuccess(false);
+
+    try {
+      const response = await fetch("/api/get-section", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: sectionToLoad.trim() })
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        const loadedSec: PPCSection = data.section;
+        
+        // Add to our list if not already present
+        setFullDatabase(prev => {
+          if (prev.some(item => item.section.toLowerCase() === loadedSec.section.toLowerCase())) {
+            return prev;
+          }
+          return [...prev, loadedSec].sort((a, b) => {
+            const aNum = parseInt(a.section);
+            const bNum = parseInt(b.section);
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return aNum - bNum;
+            }
+            return a.section.localeCompare(b.section);
+          });
+        });
+
+        // Set as selected so details are visible instantly
+        setSelectedSection(loadedSec);
+        setSectionToLoad("");
+        setLoadSectionSuccess(true);
+        setTimeout(() => setLoadSectionSuccess(false), 3000);
+      } else {
+        setLoadSectionError(data.error || "Failed to load section. Please verify the section number.");
+      }
+    } catch (err) {
+      setLoadSectionError("Connection error while communicating with the dynamic section database.");
+    } finally {
+      setIsLoadingSection(false);
+    }
+  };
   
   // UI States
   const [copiedText, setCopiedText] = useState(false);
   const [backendHealthy, setBackendHealthy] = useState<boolean | null>(null);
+  const [activeLegalStep, setActiveLegalStep] = useState<string | null>("credentials");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load Health Check
@@ -61,6 +136,37 @@ export default function App() {
         setBackendHealthy(false);
       });
   }, []);
+
+  // Automatically fetch lazy section data on-demand when selected
+  useEffect(() => {
+    if (selectedSection && !selectedSection.definition) {
+      const loadLazySection = async () => {
+        setIsLoadingSection(true);
+        setLoadSectionError(null);
+        try {
+          const response = await fetch("/api/get-section", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ section: selectedSection.section })
+          });
+          const data = await response.json();
+          if (response.ok && data.success) {
+            const loadedSec: PPCSection = data.section;
+            // Cache in list and select the expanded section
+            setFullDatabase(prev => prev.map(item => item.section === loadedSec.section ? loadedSec : item));
+            setSelectedSection(loadedSec);
+          } else {
+            setLoadSectionError(data.error || `Failed to fetch complete text for Section ${selectedSection.section}.`);
+          }
+        } catch (err) {
+          setLoadSectionError(`Connection error while fetching Section ${selectedSection.section}.`);
+        } finally {
+          setIsLoadingSection(false);
+        }
+      };
+      loadLazySection();
+    }
+  }, [selectedSection]);
 
   // Pre-loaded Pakistani Legal Case & FIR templates for quick testing
   const CASE_TEMPLATES = [
@@ -87,7 +193,7 @@ export default function App() {
   ];
 
   // Filter local database by search term
-  const filteredDatabase = PPC_DATABASE.filter(item => {
+  const filteredDatabase = fullDatabase.filter(item => {
     const term = dbSearchTerm.toLowerCase();
     return (
       item.section.toLowerCase().includes(term) ||
@@ -389,6 +495,46 @@ export default function App() {
             </div>
           </div>
 
+          {/* Dynamic Section Sync Loader */}
+          <div className="px-4 py-3 bg-slate-950/40 border-y border-slate-800/80">
+            <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-1 px-1 font-mono flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-indigo-400" />
+              Dynamic Section Sync (1 to 511)
+            </p>
+            <p className="text-[10px] text-slate-400 leading-relaxed font-sans px-1 mb-2">
+              Load and cache any other section from the full penal code dynamically.
+            </p>
+            <form onSubmit={handleLoadSection} className="flex gap-2">
+              <input
+                id="dynamic-section-input"
+                type="text"
+                placeholder="Enter Sec # (e.g. 109, 144, 337-L)"
+                value={sectionToLoad}
+                onChange={(e) => setSectionToLoad(e.target.value)}
+                className="flex-1 bg-slate-800 text-slate-150 text-xs px-2.5 py-1.5 rounded-md border border-slate-700 focus:outline-none focus:border-indigo-500 font-mono placeholder-slate-500 text-white"
+              />
+              <button
+                type="submit"
+                disabled={isLoadingSection}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-md font-semibold transition-all disabled:opacity-50 shrink-0 flex items-center justify-center min-w-[50px] cursor-pointer"
+              >
+                {isLoadingSection ? "..." : "Sync"}
+              </button>
+            </form>
+            {loadSectionError && (
+              <p className="text-[11px] text-rose-400 mt-1.5 px-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                <span>{loadSectionError}</span>
+              </p>
+            )}
+            {loadSectionSuccess && (
+              <p className="text-[11px] text-emerald-400 mt-1.5 px-1 flex items-center gap-1">
+                <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+                <span>Synchronized successfully!</span>
+              </p>
+            )}
+          </div>
+
           {/* Quick List Scrolling Space */}
           <div className="flex-1 overflow-y-auto max-h-[300px] lg:max-h-[440px] p-2 divide-y divide-slate-800/50" id="offline-law-cards">
             {filteredDatabase.length > 0 ? (
@@ -481,80 +627,363 @@ export default function App() {
                 </div>
 
                 <div className="p-5 space-y-4">
-                  {/* Statutory Definitions */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
-                      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500 block font-mono">
-                        🇬🇧 Codified English definition
-                      </span>
-                      <p className="text-xs text-slate-700 leading-relaxed font-sans">{selectedSection.definition}</p>
-                    </div>
-                    
-                    {selectedSection.urduDefinition && (
-                      <div className="bg-indigo-50/30 p-4 rounded-lg border border-indigo-100 space-y-2 text-right">
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-indigo-600 block font-mono">
-                          قا نو نی تشریح (اردو) 🇵🇰
-                        </span>
-                        <p className="text-xs font-urdu text-slate-850 leading-relaxed rtl">{selectedSection.urduDefinition}</p>
+                  {!selectedSection.definition ? (
+                    <div className="py-12 flex flex-col items-center justify-center text-center space-y-4" id="section-lazy-loader">
+                      <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="space-y-1 max-w-md">
+                        <h4 className="text-sm font-bold text-slate-800">Synchronizing Section {selectedSection.section}...</h4>
+                        <p className="text-xs text-slate-500 font-sans">
+                          Retrieving authentic statutory legal language, prescribed punishments, and Urdu interpretations from the central database.
+                        </p>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Punishment Details */}
-                  <div className="p-4 bg-rose-50/50 border border-rose-100 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Gavel className="w-4 h-4 text-rose-600" />
-                      <span className="text-[11px] uppercase tracking-wider font-bold text-rose-800 font-display">
-                        Prescribed Penal Punishment Under Pakistan Laws
-                      </span>
+                      {loadSectionError && (
+                        <div className="mt-2 text-xs text-rose-600 bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-md">
+                          {loadSectionError}
+                        </div>
+                      )}
                     </div>
-                    <p className="text-xs text-slate-800 font-sans tracking-wide leading-relaxed font-semibold">
-                      {selectedSection.punishment}
-                    </p>
-                    {selectedSection.urduPunishment && (
-                      <p className="text-xs font-urdu text-rose-950 mt-1.5 text-right rtl leading-relaxed font-medium">
-                        {selectedSection.urduPunishment}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Ingredients & Related items */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                    <div>
-                      <span className="text-xs font-bold text-slate-800 block mb-1.5 font-display">Prosecution Essentials:</span>
-                      <ul className="space-y-1">
-                        {selectedSection.keyPoints.map((pt, i) => (
-                          <li key={i} className="text-xs text-slate-650 flex items-start gap-1.5 font-sans text-slate-600">
-                            <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
-                            <span>{pt}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <span className="text-xs font-bold text-slate-800 block mb-1.5 font-display">Related Penal Provisions:</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedSection.relatedSections.map((rel, i) => (
-                          <button
-                            key={i}
-                            onClick={() => {
-                              const exactMatch = PPC_DATABASE.find(item => item.section.toLowerCase() === rel.toLowerCase());
-                              if (exactMatch) setSelectedSection(exactMatch);
-                            }}
-                            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-md border border-slate-200 transition-colors font-mono"
-                          >
-                            PPC-{rel}
-                          </button>
-                        ))}
+                  ) : (
+                    <>
+                      {/* Statutory Definitions */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
+                          <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500 block font-mono">
+                            🇬🇧 Codified English definition
+                          </span>
+                          <p className="text-xs text-slate-700 leading-relaxed font-sans">{selectedSection.definition}</p>
+                        </div>
+                        
+                        {selectedSection.urduDefinition && (
+                          <div className="bg-indigo-50/30 p-4 rounded-lg border border-indigo-100 space-y-2 text-right">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-indigo-600 block font-mono">
+                              قا نو نی تشریح (اردو) 🇵🇰
+                            </span>
+                            <p className="text-xs font-urdu text-slate-850 leading-relaxed rtl">{selectedSection.urduDefinition}</p>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </div>
+
+                      {/* Punishment Details */}
+                      <div className="p-4 bg-rose-50/50 border border-rose-100 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <Gavel className="w-4 h-4 text-rose-600" />
+                          <span className="text-[11px] uppercase tracking-wider font-bold text-rose-800 font-display">
+                            Prescribed Penal Punishment Under Pakistan Laws
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-800 font-sans tracking-wide leading-relaxed font-semibold">
+                          {selectedSection.punishment}
+                        </p>
+                        {selectedSection.urduPunishment && (
+                          <p className="text-xs font-urdu text-rose-950 mt-1.5 text-right rtl leading-relaxed font-medium">
+                            {selectedSection.urduPunishment}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Ingredients & Related items */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                        <div>
+                          <span className="text-xs font-bold text-slate-800 block mb-1.5 font-display">Prosecution Essentials:</span>
+                          <ul className="space-y-1">
+                            {selectedSection.keyPoints.map((pt, i) => (
+                              <li key={i} className="text-xs text-slate-650 flex items-start gap-1.5 font-sans text-slate-600">
+                                <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
+                                <span>{pt}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div>
+                          <span className="text-xs font-bold text-slate-800 block mb-1.5 font-display">Related Penal Provisions:</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedSection.relatedSections.map((rel, i) => (
+                              <button
+                                key={i}
+                                disabled={isLoadingSection}
+                                onClick={async () => {
+                                  const exactMatch = fullDatabase.find(item => item.section.toLowerCase() === rel.toLowerCase());
+                                  if (exactMatch) {
+                                    setSelectedSection(exactMatch);
+                                  } else {
+                                    setIsLoadingSection(true);
+                                    setLoadSectionError(null);
+                                    try {
+                                      const res = await fetch("/api/get-section", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ section: rel })
+                                      });
+                                      const data = await res.json();
+                                      if (res.ok && data.success) {
+                                        const loaded = data.section;
+                                        setFullDatabase(prev => {
+                                          if (prev.some(item => item.section.toLowerCase() === loaded.section.toLowerCase())) return prev;
+                                          return [...prev, loaded].sort((a, b) => {
+                                            const aNum = parseInt(a.section);
+                                            const bNum = parseInt(b.section);
+                                            if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+                                            return a.section.localeCompare(b.section);
+                                          });
+                                        });
+                                        setSelectedSection(loaded);
+                                      } else {
+                                        setLoadSectionError(`Could not dynamically load related Section ${rel}.`);
+                                      }
+                                    } catch (_) {
+                                      setLoadSectionError(`Failed to fetch related Section ${rel}.`);
+                                    } finally {
+                                      setIsLoadingSection(false);
+                                    }
+                                  }
+                                }}
+                                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-md border border-slate-200 transition-colors font-mono disabled:opacity-60"
+                                title="Click to view; will fetch dynamically if not locally cached"
+                              >
+                                PPC-{rel}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* PROFESSIONAL LEGAL ADVICE ROADMAP CARD */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="professional-legal-roadmap-card">
+            <div className="bg-gradient-to-r from-slate-900 to-indigo-955 bg-indigo-950 px-5 py-4 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Scale className="w-5 h-5 text-indigo-400" />
+                <div>
+                  <h3 className="text-sm font-bold font-display uppercase tracking-wider">
+                    Professional Advocative Guidance & Litigation Roadmap
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-sans">
+                    Essential legal steps under Pakistan laws (CrPC & Bar bylaws) to take with qualified counsel
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded">
+                Procedural Guide
+              </span>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="bg-amber-50/50 p-4 rounded-lg border border-amber-200/60 flex items-start gap-3">
+                <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-amber-900 font-display">Litigation Scrutiny Mandate:</h4>
+                  <p className="text-xs text-slate-700 leading-relaxed font-sans">
+                    While AI assistants efficiently search the Pakistan Penal Code (PPC) and map prosecution ingredients, any official pleading, criminal complaint, bail petition, or draft <strong>must be reviewed, signed, and submitted by a licensed, practicing Advocate</strong> carrying a valid Bar Card. This applet supports research but never replaces real attorney counsel.
+                  </p>
+                </div>
+              </div>
+
+              {/* Interactive Steps */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                {/* Step 1 button */}
+                <button
+                  type="button"
+                  onClick={() => setActiveLegalStep(activeLegalStep === "credentials" ? null : "credentials")}
+                  className={`p-3 rounded-lg text-left transition-all border flex flex-col justify-between h-full cursor-pointer ${
+                    activeLegalStep === "credentials"
+                      ? "bg-indigo-50 border-indigo-300 shadow-sm"
+                      : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  <span className="text-[9px] uppercase font-bold tracking-wider text-indigo-600 font-mono">Step 1</span>
+                  <p className="text-xs font-bold text-slate-800 mt-1 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5 text-indigo-600" /> Check Credentials
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-1 line-clamp-2">Validate bar council credentials under the 1973 Act.</p>
+                </button>
+
+                {/* Step 2 button */}
+                <button
+                  type="button"
+                  onClick={() => setActiveLegalStep(activeLegalStep === "fir" ? null : "fir")}
+                  className={`p-3 rounded-lg text-left transition-all border flex flex-col justify-between h-full cursor-pointer ${
+                    activeLegalStep === "fir"
+                      ? "bg-indigo-50 border-indigo-300 shadow-sm"
+                      : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  <span className="text-[9px] uppercase font-bold tracking-wider text-indigo-600 font-mono">Step 2</span>
+                  <p className="text-xs font-bold text-slate-800 mt-1 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5 text-indigo-600" /> Lodging FIR (154 CrPC)
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-1 line-clamp-2">Initiate criminal remedy at Police station or via 22-A petition.</p>
+                </button>
+
+                {/* Step 3 button */}
+                <button
+                  type="button"
+                  onClick={() => setActiveLegalStep(activeLegalStep === "evidence" ? null : "evidence")}
+                  className={`p-3 rounded-lg text-left transition-all border flex flex-col justify-between h-full cursor-pointer ${
+                    activeLegalStep === "evidence"
+                      ? "bg-indigo-50 border-indigo-300 shadow-sm"
+                      : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  <span className="text-[9px] uppercase font-bold tracking-wider text-indigo-600 font-mono">Step 3</span>
+                  <p className="text-xs font-bold text-slate-800 mt-1 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5 text-indigo-600" /> Compile Evidence
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-1 line-clamp-2">Assemble MLCs, eye-witness testimonies, and documents.</p>
+                </button>
+
+                {/* Step 4 button */}
+                <button
+                  type="button"
+                  onClick={() => setActiveLegalStep(activeLegalStep === "bail" ? null : "bail")}
+                  className={`p-3 rounded-lg text-left transition-all border flex flex-col justify-between h-full cursor-pointer ${
+                    activeLegalStep === "bail"
+                      ? "bg-indigo-50 border-indigo-300 shadow-sm"
+                      : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  <span className="text-[9px] uppercase font-bold tracking-wider text-indigo-600 font-mono">Step 4</span>
+                  <p className="text-xs font-bold text-slate-800 mt-1 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5 text-indigo-600" /> Bail Safeguards
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-1 line-clamp-2">Prepare Pre-arrest & Post-arrest protective bonds under CrPC.</p>
+                </button>
+              </div>
+
+              {/* Step Detail Panel */}
+              <AnimatePresence mode="wait">
+                {activeLegalStep && (
+                  <motion.div
+                    key={activeLegalStep}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3"
+                  >
+                    {activeLegalStep === "credentials" && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 border-b pb-1.5 border-slate-200">
+                          <Gavel className="w-4 h-4 text-indigo-600" />
+                          <h4 className="text-xs font-bold text-slate-850 font-display">Credential Verification: Legal Practitioners & Bar Councils Act 1973</h4>
+                        </div>
+                        <p className="text-xs leading-relaxed font-sans text-slate-700">
+                          Anyone representing themselves as an "Advocate", "Pleader", or "Legal Counsel" must be actively enrolled as an Advocate of the District Courts or High Court with their respective Provincial Bar Council. To avoid legal fraud, clients are highly advised to visually verify their attorney's Bar Member identity card.
+                        </p>
+                        <div className="space-y-1">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-600 block font-mono">Provincial Statutory Watchdogs:</span>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <div className="bg-white p-2 rounded border border-slate-200 text-center flex flex-col justify-center shadow-xs">
+                              <span className="text-[10px] font-bold text-slate-800 font-sans">Punjab Bar Council</span>
+                              <span className="text-[9px] text-slate-500 font-mono mt-0.5">Lahore</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-200 text-center flex flex-col justify-center shadow-xs">
+                              <span className="text-[10px] font-bold text-slate-800 font-sans">Sindh Bar Council</span>
+                              <span className="text-[9px] text-slate-500 font-mono mt-0.5">Karachi</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-200 text-center flex flex-col justify-center shadow-xs">
+                              <span className="text-[10px] font-bold text-slate-800 font-sans">KP Bar Council</span>
+                              <span className="text-[9px] text-slate-500 font-mono mt-0.5">Peshawar</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-200 text-center flex flex-col justify-center shadow-xs">
+                              <span className="text-[10px] font-bold text-slate-800 font-sans">Balochistan Bar Council</span>
+                              <span className="text-[9px] text-slate-500 font-mono mt-0.5">Quetta</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-200 text-center flex flex-col justify-center shadow-xs">
+                              <span className="text-[10px] font-bold text-slate-800 font-sans">Islamabad Bar Council</span>
+                              <span className="text-[9px] text-slate-500 font-mono mt-0.5">Islamabad</span>
+                            </div>
+                            <div className="bg-indigo-50/50 p-2 rounded border border-indigo-100 text-center flex flex-col justify-center shadow-xs">
+                              <span className="text-[10px] font-bold text-indigo-850 font-sans">Legal Aid Network</span>
+                              <span className="text-[9px] text-indigo-600 font-mono mt-0.5">Free Advice Clinics</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeLegalStep === "fir" && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 border-b pb-1.5 border-slate-200">
+                          <Gavel className="w-4 h-4 text-indigo-600" />
+                          <h4 className="text-xs font-bold text-slate-850 font-display">Lodging criminal F.I.R. (Section 154 Code of Criminal Procedure)</h4>
+                        </div>
+                        <p className="text-xs leading-relaxed font-sans text-slate-700">
+                          In case of cognizable offenses (e.g. robbery, homicide, assault), an official <strong>First Information Report (F.I.R.)</strong> must be registered at the police station having territorial jurisdiction. 
+                        </p>
+                        <div className="bg-indigo-50/45 p-3 rounded border border-indigo-100 flex items-start gap-2.5">
+                          <ShieldAlert className="w-4.5 h-4.5 text-indigo-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-[11px] font-bold text-indigo-950 block">Remedy for Police Refusal (Section 22-A & 22-B CrPC):</span>
+                            <p className="text-[10px] text-slate-700 leading-normal mt-0.5">
+                              If the Station House Officer (SHO) refuses to register your genuine grievance statement, a litigation Advocate can petition the Court of the District & Sessions Judge (who serves as Ex-Officio Justice of Peace) under Sections 22-A and 22-B to seek directory orders instructing the police to register the Case immediately.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeLegalStep === "evidence" && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 border-b pb-1.5 border-slate-200">
+                          <Gavel className="w-4 h-4 text-indigo-600" />
+                          <h4 className="text-xs font-bold text-slate-850 font-display">Prosecution and defense Evidence Safeguards</h4>
+                        </div>
+                        <p className="text-xs leading-relaxed font-sans text-slate-700">
+                          To establish or defeat a criminal charge, proper evidentiary elements must be mapped under the Qanun-e-Shahadat Order 1984 (QSO):
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div className="p-2.5 bg-white rounded border border-slate-200 space-y-1">
+                            <span className="font-bold text-slate-800 block">Personal Evidences:</span>
+                            <p className="text-[10px] text-slate-500 leading-normal">
+                              Identify credible eye-witnesses at the scene, prepare their initial statements, and draft secure complaints immediately to minimize allegations of malicious "afterthought deliberation."
+                            </p>
+                          </div>
+                          <div className="p-2.5 bg-white rounded border border-slate-200 space-y-1">
+                            <span className="font-bold text-slate-800 block">Documentary & Forensic Evidence:</span>
+                            <p className="text-[10px] text-slate-500 leading-normal">
+                              Compile MLC reports for injuries, secure receipts, banking screenshots for cheque bounces (489-F PPC), and digital media records (e.g. CCTV footage, WhatsApp records) to ensure forensic admissibility.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeLegalStep === "bail" && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 border-b pb-1.5 border-slate-200">
+                          <Gavel className="w-4 h-4 text-indigo-600" />
+                          <h4 className="text-xs font-bold text-slate-850 font-display">Filing For Bail Protections (Sections 497 & 498 CrPC)</h4>
+                        </div>
+                        <p className="text-xs leading-relaxed font-sans text-slate-700">
+                          Under Pakistan's Code of Criminal Procedure, protecting individual liberty against malicious or politically-motivated arrests is a fundamental right. 
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div className="p-2.5 bg-white rounded border border-slate-200 space-y-1">
+                            <span className="font-bold text-slate-850 block">Pre-Arrest Bail (Section 498 CrPC):</span>
+                            <p className="text-[10px] text-slate-600 leading-normal">
+                              If an FIR is registered or threatened, and the accused suspects ulterior/mala fide motives to cause humiliation, an Advocate can file for Pre-Arrest Bail in the Court of Sessions or High Court for protective ad-interim bond.
+                            </p>
+                          </div>
+                          <div className="p-2.5 bg-white rounded border border-slate-200 space-y-1">
+                            <span className="font-bold text-slate-850 block">Post-Arrest Bail (Section 497 CrPC):</span>
+                            <p className="text-[10px] text-slate-600 leading-normal">
+                              If arrested, an application for post-arrest release is initiated. In non-bailable matters, it is an extraordinary concession granted upon showing sufficient grounds of further inquiry or statutory age/illness exceptions.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
 
           {/* AI INTERACTIVE SECTION (SEARCH / CONSULTATION OR DOCUMENT ANALYZER) */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col" id="ai-workbench-card">
