@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Outfit:wght@100..900&family=Noto+Naskh+Urdu:wght@400..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-urdu: "Noto Naskh Urdu", serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-legal-dark: #0f172a; /* Deep slate-900 */
+  --color-legal-gold: #6366f1; /* Premium Indigo-500/600 Accent */
+  --color-legal-gold-light: #f0f2fe; /* Light Indigo-50 */
+}
+
+/* Custom Markdown styling for legal document output matching refined Sleek theme */
+.legal-markdown {
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+}
+
+.legal-markdown h3 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #0f172a;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.25rem;
+}
+
+.legal-markdown p {
+  margin-bottom: 1rem;
+  color: #334155;
+}
+
+.legal-markdown ul, .legal-markdown ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  list-style-type: disc;
+}
+
+.legal-markdown li {
+  margin-bottom: 0.5rem;
+  color: #475569;
+}
+
+.legal-markdown strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.legal-markdown blockquote {
+  border-left: 4px solid #6366f1;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  background-color: #f8fafc;
+}
+
